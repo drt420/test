@@ -199,11 +199,25 @@ void read_config()
 			m_config = config;
 	}
 
+	if (m_config.m_anonymous_announce) 
+	{
+		#ifdef PEERS_KEY
+			#undef PEERS_KEY
+		#endif
+	} 
+	else 
+	{
+		#ifndef PEERS_KEY
+			#define PEERS_KEY 1
+		#endif
+	}
+
 	if (m_config.m_listen_ipas.empty())
 		m_config.m_listen_ipas.insert(htonl(INADDR_ANY));
-	if (m_config.m_listen_ports.empty()) {
+
+	if (m_config.m_listen_ports.empty())
 		m_config.m_listen_ports.insert(2710);
-	}
+	
 	m_read_config_time = srv_time();
 }
 
@@ -790,16 +804,17 @@ int srv_run(const std::string& table_prefix, bool use_sql, const std::string& co
 		else if (srv_time() - m_clean_up_time > m_config.m_clean_up_interval)
 			clean_up();
 
-		/* @Aayush */
-		else if (srv_time() - m_read_db_deny_from_hosts_time > m_config.m_read_db_interval)
-			read_db_deny_from_hosts();
-		else if (srv_time() - m_read_db_deny_from_clients_time > m_config.m_read_db_interval)
-			read_db_deny_from_clients();
 		else if (srv_time() - m_read_db_torrents_time > m_config.m_read_db_files_interval)
 			read_db_torrents();
+		
 		else if (srv_time() - m_read_db_users_time > m_config.m_read_db_users_interval) 
 			read_db_users();
-		/* @Aayush */
+		
+		else if (srv_time() - m_read_db_deny_from_hosts_time > m_config.m_read_db_interval)
+			read_db_deny_from_hosts();
+		
+		else if (srv_time() - m_read_db_deny_from_clients_time > m_config.m_read_db_interval)
+			read_db_deny_from_clients();
 
 		else if (m_config.m_write_db_interval && srv_time() - m_write_db_torrents_time > m_config.m_write_db_interval)
 			write_db_torrents();
@@ -1263,15 +1278,21 @@ std::string srv_debug(const Ctracker_input& ti)
 	os << "<table>";
 	if (ti.m_info_hash.empty())
 	{
+		os << "<tr rowspan=2><td class=ar>" << ntohl(ti.m_ipa)
+			<< "</td><td>" << ntohs(ti.m_port)
+			<< "</td></tr>";
+
 		for (auto& i : m_torrents)
 		{
 			if (!i.second.leechers && !i.second.seeders)
 				continue;
+
 			os << "<tr><td class=ar>" << i.second.fid
-				<< "<td><a href=\"?info_hash=" << uri_encode(i.first) << "\">" << hex_encode(i.first) << "</a>"
-				<< "<td>" << (i.second.dirty ? '*' : ' ')
-				<< "<td class=ar>" << i.second.leechers
-				<< "<td class=ar>" << i.second.seeders;
+				<< "</td><td><a href=\"?info_hash=" << uri_encode(i.first) << "\">" << hex_encode(i.first) << "</a>"
+				<< "</td><td>" << (i.second.dirty ? '*' : ' ')
+				<< "</td><td class=ar>" << i.second.leechers
+				<< "</td><td class=ar>" << i.second.seeders
+				<< "</td></tr>";
 		}
 	}
 	else if (const t_torrent* i = find_torrent(ti.m_info_hash))

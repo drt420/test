@@ -34,7 +34,8 @@ void Cconfig::fill_maps(const Cconfig* v)
 			{ "log_scrape", &m_log_scrape, false },
 			{ "freeleech", &m_freeleech, false},
 			{ "seedbonus", &m_seedbonus, true},
-			{ "cheat_system", &m_cheater, true},
+			{ "cheat_system", &m_cheater, false},
+			{ "cloudfare", &m_cloudfare, false},
 			{ NULL, NULL, false }
 		};
 		fill_map(attributes, v ? &v->m_attributes_bool : NULL, m_attributes_bool);
@@ -46,7 +47,7 @@ void Cconfig::fill_maps(const Cconfig* v)
 			{ "clean_up_interval", &m_clean_up_interval, 60 },
 			{ "seedbonus_interval", &m_seedbonus_interval, 3600 },
 			{ "read_config_interval", &m_read_config_interval, 60 },
-			{ "read_db_interval", &m_read_db_interval, 150 },
+			{ "read_db_interval", &m_read_db_interval, 60 },
 			{ "read_db_files_interval", &m_read_db_files_interval, 30},
 			{ "read_db_users_interval", &m_read_db_users_interval, 30},
 			{ "scrape_interval", &m_scrape_interval, 0 },

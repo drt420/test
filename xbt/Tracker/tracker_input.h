@@ -35,7 +35,7 @@ class Ctracker_input
 		long long m_downloaded = 0;
 		long long m_left = 0;
 		long long m_uploaded = 0;
-		int m_ipa = 0;
+		unsigned long m_ipa = 0;
 		int m_port = 0;
 		std::string m_agent = "---";
 		int m_num_want = 0;

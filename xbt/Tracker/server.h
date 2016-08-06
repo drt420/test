@@ -4,8 +4,6 @@
 #include "tracker_input.h"
 #include <map>
 
-#define PEERS_KEY 1
-
 class Cstats
 {
 public:
@@ -101,7 +99,7 @@ struct t_torrent
 	int seeders = 0;
 	int tor_user_id = 0;
 	bool dirty = true;
-    bool freeleech = false;
+    	bool freeleech = false;
 };
 
 struct t_user

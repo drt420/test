@@ -25,6 +25,7 @@ public:
 	bool m_freeleech;
 	bool m_seedbonus;
 	bool m_cheater;
+	bool m_cloudfare;
 	int m_announce_interval;
 	int m_clean_up_interval;
 	int m_seedbonus_interval;

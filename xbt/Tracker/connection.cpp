@@ -14,6 +14,7 @@ Cconnection::Cconnection(const Csocket& s, const sockaddr_in& a)
 	m_state = 0;
 	m_w = m_read_b;
 	m_agent = ""; //@Aayush
+	m_ipa = ""; //@Aayush
 }
 
 int Cconnection::pre_select(fd_set* fd_read_set, fd_set* fd_write_set)
@@ -60,7 +61,8 @@ int Cconnection::recv()
 
 	m_w.advance_begin(r);
 	int state;
-	std::string line; 
+	
+	std::string header; // @Aayush
 
 	do
 	{
@@ -76,24 +78,19 @@ int Cconnection::recv()
 			switch (m_state)
 			{
 			case 0:
+				
 				/* @Aayush */
-				if (m_agent.empty())
-				{
-					line = std::string(a);
-					boost::iterator_range<std::string::iterator> range = boost::ifind_first(line, "user-agent: ");
-					if (!range.empty()) {
-						for (std::string::iterator it = range.end(); it != line.end();it++)
-						{
-							if (*it == '\n' || *it == '\r') {
-								m_agent = uri_decode(m_agent);
-								break;
-							}
+				header = std::string(a);
+				std::cout << header << std::endl;
+				if (m_agent.empty()) {
+					m_agent = get_header("user-agent: ", header);
+				}
 
-							m_agent.push_back(*it);
-						}
-					}
+				if (m_ipa.empty() && srv_config().m_cloudfare) {
+					m_ipa = get_header("cf-connecting-ip: ", header);
 				}
 				/* @Aayush */
+
 				read(std::string(&m_read_b.front(), a - &m_read_b.front()));
 				m_state = 1;
 			case 1:
@@ -135,6 +132,26 @@ int Cconnection::send()
 	if (m_r.empty())
 		m_write_b.clear();
 	return 0;
+}
+
+std::string Cconnection::get_header(const std::string key, const std::string& header)
+{
+	StringRange range = boost::ifind_first(header, key); //"user-agent: ";
+	if (!range.empty()) 
+	{
+		std::string value;
+		for (std::string::const_iterator it = range.end(); it != header.end(); it++)
+		{
+			if (*it == '\n' || *it == '\r') {
+				boost::algorithm::trim(value);
+				return uri_decode(value);
+			}
+
+			value.push_back(*it);
+		}
+	}
+
+	return "-";
 }
 
 void Cconnection::read(const std::string& v)
@@ -186,10 +203,19 @@ void Cconnection::read(const std::string& v)
 		}
 	}
 
+	// forwared-ip / cloudfare
+	if (!m_ipa.empty() && m_ipa != "-") 
+	{
+		struct in_addr addr;
+		if (inet_aton(m_ipa.c_str(), &addr) != 0)
+			m_a.sin_addr.s_addr = addr.s_addr;
+	}
+
 	if (!ti.m_ipa || !is_private_ipa(m_a.sin_addr.s_addr))
 		ti.m_ipa = m_a.sin_addr.s_addr;
 
-	if (!m_agent.empty())
+	// useragent
+	if (!m_agent.empty() && m_agent != "-")
 		ti.m_agent = m_agent.substr(0, 20);
 
 	str_ref torrent_pass;
@@ -234,6 +260,7 @@ void Cconnection::read(const std::string& v)
 		{
 			h += "Content-Type: text/html; charset=us-ascii\r\n";
 			s = srv_debug(ti);
+			s += "<br><br>" + m_ipa;
 		}
 		break;
 	case 's':
